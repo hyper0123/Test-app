@@ -1,101 +1,67 @@
-<?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools">
+import android.os.Bundle
+import android.view.View
+import android.webkit.WebSettings
+import android.webkit.WebView
+import androidx.appcompat.app.AppCompatActivity
+import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.ui.PlayerView
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        tools:context=".PlayerActivity">
+class PlayerActivity : AppCompatActivity() {
 
-        <com.google.android.exoplayer2.ui.PlayerView
-            android:id="@+id/player_view"
-            android:background="@android:color/black"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:played_color="@color/color_red_light"
-            app:show_subtitle_button="true"
-            app:show_buffering="always"
-            app:controller_layout_id="@layout/custom_control"
-            app:keep_content_on_player_reset="true"/>
+    private lateinit var playerView: PlayerView
+    private lateinit var webView: WebView
+    private lateinit var exoPlayer: ExoPlayer
 
-        <LinearLayout
-            android:id="@+id/layout_info"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/player_info_margin_start"
-            android:layout_marginTop="@dimen/player_info_margin_start"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            android:focusable="false"
-            android:orientation="vertical"
-            android:visibility="invisible"
-            tools:visibility="visible">
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main) // Asegúrate de usar el archivo XML correcto
 
-            <TextView
-                android:id="@+id/category_name"
-                style="@style/TextAppearance.AppCompat.Small"
-                android:background="@drawable/osd_text_background"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:padding="@dimen/ch_name_padding"
-                android:gravity="start|center_vertical"
-                android:paddingStart="@dimen/exo_icon_padding_bottom"
-                android:paddingEnd="@dimen/exo_icon_padding_bottom"
-                android:textAllCaps="true"
-                android:textColor="@android:color/white"
-                android:textStyle="bold"
-                tools:text="CATEGORY_NAME" />
+        // Inicializar PlayerView y WebView
+        playerView = findViewById(R.id.player_view)
+        webView = findViewById(R.id.webview)
 
-            <TextView
-                android:id="@+id/channel_name"
-                style="@style/TextAppearance.AppCompat.Small"
-                android:background="@drawable/osd_text_background"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/player_info_margin_space"
-                android:padding="@dimen/ch_name_padding"
-                android:gravity="start|center_vertical"
-                android:paddingStart="@dimen/exo_icon_padding_bottom"
-                android:paddingEnd="@dimen/exo_icon_padding_bottom"
-                android:textAllCaps="true"
-                android:textColor="@android:color/white"
-                android:textStyle="bold"
-                tools:text="CHANNEL_NAME" />
+        // Configuración de ExoPlayer
+        exoPlayer = ExoPlayer.Builder(this).build()
+        playerView.player = exoPlayer
 
-        </LinearLayout>
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-        <androidx.constraintlayout.widget.Guideline
-            android:id="@+id/guideline"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintGuide_percent="0.5"
-            app:layout_constraintBottom_toBottomOf="parent" />
-        <TextView
-            android:id="@+id/seek_back"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/exo_white"
-            android:textSize="18sp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/guideline"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"/>
-        <TextView
-            android:id="@+id/seek_forward"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/exo_white"
-            android:textSize="18sp"
-            app:layout_constraintStart_toStartOf="@id/guideline"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"/>
-        </androidx.constraintlayout.widget.ConstraintLayout>
-    </androidx.constraintlayout.widget.ConstraintLayout>
+        val videoUrl = "https://path/to/video.mp4" // URL del video
+        exoPlayer.setMediaItem(MediaItem.fromUri(videoUrl))
+        exoPlayer.prepare()
+        exoPlayer.playWhenReady = true
 
-</layout>
+        // Configuración de WebView
+        val webSettings: WebSettings = webView.settings
+        webSettings.javaScriptEnabled = true // Habilitar JavaScript
+        webView.loadUrl("https://www.youtube.com") // Cargar una página web con videos
+
+        // Mostrar PlayerView al inicio
+        showPlayerView()
+
+        // Alternar entre WebView y PlayerView con un botón o lógica
+        findViewById<View>(R.id.button_toggle).setOnClickListener {
+            if (playerView.visibility == View.VISIBLE) {
+                showWebView()
+            } else {
+                showPlayerView()
+            }
+        }
+    }
+
+    // Mostrar PlayerView y ocultar WebView
+    private fun showPlayerView() {
+        playerView.visibility = View.VISIBLE
+        webView.visibility = View.GONE
+    }
+
+    // Mostrar WebView y ocultar PlayerView
+    private fun showWebView() {
+        webView.visibility = View.VISIBLE
+        playerView.visibility = View.GONE
+        exoPlayer.pause() // Pausar la reproducción en ExoPlayer
+    }
+
+    override fun onStop() {
+        super.onStop()
+        exoPlayer.release() // Liberar recursos al detener la actividad
+    }
+}
