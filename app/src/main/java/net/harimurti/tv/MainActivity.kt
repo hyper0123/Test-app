@@ -56,11 +56,19 @@ open class MainActivity : AppCompatActivity() {
         // add divider on recyclerview
         binding.rvCategory.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
 
-        // set button click listner
-        binding.buttonSearch.setOnClickListener{ openSearch() }
+        // set button click listeners
+        binding.buttonSearch.setOnClickListener { openSearch() }
         binding.buttonRefresh.setOnClickListener { updatePlaylist(false) }
-        binding.buttonSettings.setOnClickListener{ openSettings() }
+        binding.buttonSettings.setOnClickListener { openSettings() }
         binding.buttonExit.setOnClickListener { finish() }
+
+        // toggle button to switch between PlayerView and WebView
+        binding.buttonToggle.setOnClickListener {
+            togglePlayerAndWebView()
+        }
+
+        // setup WebView
+        setupWebView()
 
         // local broadcast receiver to update playlist
         LocalBroadcastManager.getInstance(this)
@@ -69,50 +77,56 @@ open class MainActivity : AppCompatActivity() {
         // set playlist
         if (!Playlist.cached.isCategoriesEmpty()) setPlaylistToAdapter(Playlist.cached)
         else showAlertPlaylistError(getString(R.string.null_playlist))
+    }
 
+    private fun setupWebView() {
+        binding.webview.settings.javaScriptEnabled = true
+        binding.webview.loadUrl("https://www.example.com")
+        binding.webview.visibility = View.GONE
+    }
+
+    private fun togglePlayerAndWebView() {
+        if (binding.playerView.visibility == View.VISIBLE) {
+            binding.playerView.visibility = View.GONE
+            binding.webview.visibility = View.VISIBLE
+            binding.buttonToggle.text = getString(R.string.show_player)
+        } else {
+            binding.playerView.visibility = View.VISIBLE
+            binding.webview.visibility = View.GONE
+            binding.buttonToggle.text = getString(R.string.show_webview)
+        }
     }
 
     private fun setLoadingPlaylist(show: Boolean) {
-        /* i don't why hideShimmer() leaves drawable visible */
         if (show) {
             binding.loading.startShimmer()
             binding.loading.visibility = View.VISIBLE
-        }
-        else {
+        } else {
             binding.loading.stopShimmer()
             binding.loading.visibility = View.GONE
         }
     }
 
     private fun setPlaylistToAdapter(playlistSet: Playlist) {
-        // sort category by name
         if(preferences.sortCategory) playlistSet.sortCategories()
-        // sort channels by name
         if(preferences.sortChannel) playlistSet.sortChannels()
-        // remove channels with empty streamurl
         playlistSet.trimChannelWithEmptyStreamUrl()
 
-        // favorites part
-        val fav = helper.readFavorites()
-            .trimNotExistFrom(playlistSet)
+        val fav = helper.readFavorites().trimNotExistFrom(playlistSet)
         if (preferences.sortFavorite) fav.sort()
         if (fav?.channels?.isNotEmpty() == true)
             playlistSet.insertFavorite(fav.channels)
         else playlistSet.removeFavorite()
 
-        // set new playlist
         adapter = CategoryAdapter(playlistSet.categories)
         binding.catAdapter = adapter
 
-        // write cache
         Playlist.cached = playlistSet
         helper.writeCache(playlistSet)
 
-        // hide loading
         setLoadingPlaylist(false)
         Toast.makeText(applicationContext, R.string.playlist_updated, Toast.LENGTH_SHORT).show()
 
-        // launch player if playlastwatched is true
         if (preferences.playLastWatched && PlayerActivity.isFirst) {
             val intent = Intent(this, PlayerActivity::class.java)
             intent.putExtra(PlayData.VALUE, preferences.watched)
@@ -121,10 +135,7 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun updatePlaylist(useCache: Boolean) {
-        // show loading
         setLoadingPlaylist(true)
-
-        // clearing adapter
         binding.catAdapter?.clear()
         val playlistSet = Playlist()
 
@@ -136,7 +147,6 @@ open class MainActivity : AppCompatActivity() {
             }
 
             override fun onResponse(playlist: Playlist?) {
-                // merge into playlistset
                 if (playlist != null) playlistSet.mergeWith(playlist)
                 else Toast.makeText(applicationContext, R.string.playlist_cant_be_parsed, Toast.LENGTH_SHORT).show()
             }
@@ -194,10 +204,10 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun openSettings(){
-        SettingDialog().show(supportFragmentManager.beginTransaction(),null)
+        SettingDialog().show(supportFragmentManager.beginTransaction(), null)
     }
 
     private fun openSearch() {
-        SearchDialog().show(supportFragmentManager.beginTransaction(),null)
+        SearchDialog().show(supportFragmentManager.beginTransaction(), null)
     }
 }
